@@ -12,9 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37993134523b19941b2c3adf45292d0b, type: 3}
   m_Name: Variant1
   m_EditorClassIdentifier: 
-  weaponName: Second gun
+  weaponName: piu piu
+  weaponID: 1
   weaponColor: {r: 1, g: 0, b: 0, a: 0}
   weaponScale: {x: 1, y: 1, z: 1}
   fireRate: 0.7
   damage: 10
   projectilePrefab: {fileID: 896339447886318403, guid: 4dd5872b32512124aa03bfa85e6ee9be, type: 3}
+  weaponIcon: {fileID: 21300000, guid: 0874ba64a021614429a4ce5bf3f7814a, type: 3}

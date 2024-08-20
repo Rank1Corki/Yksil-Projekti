@@ -6,6 +6,8 @@ public class Gun : MonoBehaviour
 
     private float nextFireTime = 0f;  // Tracks when the gun can fire next
 
+    public string weaponID;  // Unique identifier for the weapon
+
     // Method to update the gun's properties based on a WeaponVariant
     public void ApplyVariant(WeaponVariant variant)
     {
@@ -21,6 +23,9 @@ public class Gun : MonoBehaviour
         {
             renderer.material.color = variant.weaponColor;
         }
+
+        // Assign the weaponID from the variant
+        weaponID = variant.weaponID;
     }
 
     // Method to handle shooting
@@ -41,11 +46,11 @@ public class Gun : MonoBehaviour
                 rb.velocity = shootPoint.forward * gunData.projectileSpeed;
             }
 
-            // Set the damage for the projectile if it has a Projectile script attached
+            // Set the damage and weapon ID for the projectile
             Projectile projectileScript = projectile.GetComponent<Projectile>();
             if (projectileScript != null)
             {
-                projectileScript.SetDamage(gunData.damage);
+                projectileScript.SetDamage(gunData.damage, weaponID);
             }
         }
     }

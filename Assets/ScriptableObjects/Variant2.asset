@@ -13,8 +13,10 @@ MonoBehaviour:
   m_Name: Variant2
   m_EditorClassIdentifier: 
   weaponName: gun
+  weaponID: 2
   weaponColor: {r: 0.07823324, g: 1, b: 0, a: 0}
   weaponScale: {x: 1, y: 1, z: 1}
   fireRate: 0.6
   damage: 12
   projectilePrefab: {fileID: 896339447886318403, guid: 4dd5872b32512124aa03bfa85e6ee9be, type: 3}
+  weaponIcon: {fileID: 21300000, guid: 5c75cabaa2426e645bfc3d4f8158234a, type: 3}

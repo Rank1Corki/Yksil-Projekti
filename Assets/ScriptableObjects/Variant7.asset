@@ -13,8 +13,10 @@ MonoBehaviour:
   m_Name: Variant7
   m_EditorClassIdentifier: 
   weaponName: BWC
+  weaponID: 7
   weaponColor: {r: 1, g: 1, b: 1, a: 0}
   weaponScale: {x: 1, y: 1, z: 1}
   fireRate: 0.1
   damage: 26
   projectilePrefab: {fileID: 896339447886318403, guid: 4dd5872b32512124aa03bfa85e6ee9be, type: 3}
+  weaponIcon: {fileID: 21300000, guid: 98c8f0a9a24356c4d8e071d1ae3e276a, type: 3}

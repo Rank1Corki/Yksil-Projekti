@@ -9,6 +9,8 @@ public class PlayerController : MonoBehaviour
     public Transform cameraTransform;
 
     public float verticalLookRange = 80.0f;
+    public float wallCheckDistance = 0.5f;
+    public float wallCheckOffset = 0.1f;  // Offset from player center to check for walls
 
     private Rigidbody rb;
     private bool isGrounded;
@@ -21,7 +23,6 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
 
-        // Hide and lock the cursor in the middle of the screen
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
@@ -33,23 +34,23 @@ public class PlayerController : MonoBehaviour
         float moveZ = Input.GetAxis("Vertical");
         bool isSprinting = Input.GetKey(KeyCode.LeftShift);
 
-        float currentSpeed = isSprinting ? speed * sprintMultiplier : speed;
-        moveInput = transform.right * moveX + transform.forward * moveZ;
-        moveVelocity = moveInput * currentSpeed;
+        moveInput = new Vector3(moveX, 0, moveZ).normalized;
 
-        // Handle jumping input
+        float currentSpeed = isSprinting ? speed * sprintMultiplier : speed;
+        moveVelocity = transform.TransformDirection(moveInput) * currentSpeed;
+
+        HandleCollision(ref moveVelocity);
+
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }
 
-        // Handle camera rotation with sensitivity
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
         transform.Rotate(Vector3.up * mouseX);
 
-        // Limit vertical camera rotation
         xRotation -= mouseY;
         xRotation = Mathf.Clamp(xRotation, -verticalLookRange, verticalLookRange);
         cameraTransform.localRotation = Quaternion.Euler(xRotation, 0.0f, 0.0f);
@@ -57,14 +58,29 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        // Check if the player is on the ground
         isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f);
-
-        // Apply movement in FixedUpdate for smooth physics integration
         rb.MovePosition(rb.position + moveVelocity * Time.fixedDeltaTime);
     }
 
-    // Public method to get the grounded status
+    private void HandleCollision(ref Vector3 velocity)
+    {
+        RaycastHit hit;
+        Vector3 playerCenter = transform.position;
+
+        // Check for walls in the direction of movement
+        if (Physics.Raycast(playerCenter + transform.TransformDirection(Vector3.forward) * wallCheckOffset,
+                            velocity.normalized, out hit, wallCheckDistance))
+        {
+            Vector3 hitNormal = hit.normal;
+
+            // Adjust the velocity to slide along the wall
+            velocity = Vector3.ProjectOnPlane(velocity, hitNormal);
+
+            // Smoothly adjust the velocity to prevent jitter
+            velocity = Vector3.Lerp(velocity, transform.TransformDirection(moveInput) * speed, 0.5f);
+        }
+    }
+
     public bool IsGrounded()
     {
         return isGrounded;
