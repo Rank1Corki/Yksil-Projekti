@@ -2,21 +2,23 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    public float speed = 5.0f;
-    public float sprintMultiplier = 1.5f;
-    public float jumpForce = 5.0f;
-    public float mouseSensitivity = 2.0f;
+    public float walkSpeed = 2f;
+    public float sprintSpeed = 4f;
+    public float mouseSensitivity = 2f;
+    public float jumpForce = 3f;
+    public float stepHeight = 0.3f;
+    public float stepRayUpper = 0.45f;
+    public float stepRayLower = 0.1f;
+    public float wallSlideFriction = 0.5f; // Friction factor when sliding along walls
+
     public Transform cameraTransform;
 
-    public float verticalLookRange = 80.0f;
-    public float wallCheckDistance = 0.5f;
-    public float wallCheckOffset = 0.1f;  // Offset from player center to check for walls
-
     private Rigidbody rb;
+    private float yRot;
+    private float xRot;
     private bool isGrounded;
     private Vector3 moveInput;
     private Vector3 moveVelocity;
-    private float xRotation = 0.0f;
 
     void Start()
     {
@@ -29,55 +31,77 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        // Handle mouse rotation
+        yRot += Input.GetAxis("Mouse X") * mouseSensitivity;
+        transform.localEulerAngles = new Vector3(transform.localEulerAngles.x, yRot, transform.localEulerAngles.z);
+
+        xRot -= Input.GetAxis("Mouse Y") * mouseSensitivity;
+        xRot = Mathf.Clamp(xRot, -80f, 80f); // Limit vertical look to avoid flipping
+        cameraTransform.localEulerAngles = new Vector3(xRot, 0f, 0f);
+
         // Handle movement input
-        float moveX = Input.GetAxis("Horizontal");
-        float moveZ = Input.GetAxis("Vertical");
+        float moveX = Input.GetAxisRaw("Horizontal");
+        float moveZ = Input.GetAxisRaw("Vertical");
         bool isSprinting = Input.GetKey(KeyCode.LeftShift);
 
         moveInput = new Vector3(moveX, 0, moveZ).normalized;
+        float currentSpeed = isSprinting ? sprintSpeed : walkSpeed;
 
-        float currentSpeed = isSprinting ? speed * sprintMultiplier : speed;
         moveVelocity = transform.TransformDirection(moveInput) * currentSpeed;
 
-        HandleCollision(ref moveVelocity);
-
+        // Jumping logic
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }
-
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
-
-        transform.Rotate(Vector3.up * mouseX);
-
-        xRotation -= mouseY;
-        xRotation = Mathf.Clamp(xRotation, -verticalLookRange, verticalLookRange);
-        cameraTransform.localRotation = Quaternion.Euler(xRotation, 0.0f, 0.0f);
     }
 
     void FixedUpdate()
     {
         isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f);
-        rb.MovePosition(rb.position + moveVelocity * Time.fixedDeltaTime);
+
+        if (moveInput.magnitude > 0)
+        {
+            StepClimb();  // Handle climbing small steps like stairs
+            HandleWallSliding();  // Handle sliding along walls
+
+            rb.velocity = new Vector3(moveVelocity.x, rb.velocity.y, moveVelocity.z);
+        }
+        else if (isGrounded)
+        {
+            rb.velocity = new Vector3(0, rb.velocity.y, 0);
+        }
     }
 
-    private void HandleCollision(ref Vector3 velocity)
+    private void StepClimb()
+    {
+        // Raycast to detect if there's a step ahead
+        RaycastHit hitLower;
+        RaycastHit hitUpper;
+
+        Vector3 originLower = transform.position + Vector3.up * stepRayLower;
+        Vector3 originUpper = transform.position + Vector3.up * stepRayUpper;
+
+        if (Physics.Raycast(originLower, transform.forward, out hitLower, 0.3f) &&
+            !Physics.Raycast(originUpper, transform.forward, out hitUpper, 0.3f))
+        {
+            rb.position += new Vector3(0, stepHeight, 0);
+        }
+    }
+
+    private void HandleWallSliding()
     {
         RaycastHit hit;
-        Vector3 playerCenter = transform.position;
+        Vector3 movementDirection = moveVelocity.normalized;
 
-        // Check for walls in the direction of movement
-        if (Physics.Raycast(playerCenter + transform.TransformDirection(Vector3.forward) * wallCheckOffset,
-                            velocity.normalized, out hit, wallCheckDistance))
+        // Cast a ray in the direction of movement
+        if (Physics.Raycast(transform.position, movementDirection, out hit, 0.5f))
         {
             Vector3 hitNormal = hit.normal;
 
-            // Adjust the velocity to slide along the wall
-            velocity = Vector3.ProjectOnPlane(velocity, hitNormal);
-
-            // Smoothly adjust the velocity to prevent jitter
-            velocity = Vector3.Lerp(velocity, transform.TransformDirection(moveInput) * speed, 0.5f);
+            // Adjust the movement direction to slide along the wall
+            Vector3 slideDirection = Vector3.ProjectOnPlane(movementDirection, hitNormal);
+            moveVelocity = slideDirection * moveVelocity.magnitude * wallSlideFriction;
         }
     }
 
