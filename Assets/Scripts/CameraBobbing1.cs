@@ -31,7 +31,7 @@ public class CameraBobbing : MonoBehaviour
 
             // Check if the player is moving
             bool isSprinting = Input.GetKey(KeyCode.LeftShift); // Check if the sprint key is pressed
-            bool isGrounded = playerController.IsGrounded(); // Check if the player is on the ground
+            bool isGrounded = playerController.CheckIfGrounded(); // Check if the player is on the ground
             float currentBobbingSpeed = isSprinting ? bobbingSpeed * sprintBobbingSpeedMultiplier : bobbingSpeed;
 
             if (isGrounded && (Mathf.Abs(moveX) > 0.1f || Mathf.Abs(moveZ) > 0.1f))
