@@ -4,63 +4,77 @@ using UnityEngine.AI;
 public class EnemyAi : MonoBehaviour
 {
     public Transform player;
-    public float visionRange = 10f;
-    public float visionAngle = 45f;
-    public float attackRange = 2f;
-    public float wanderRange = 10f;
-    public float wanderTime = 5f;
-    public float timeBetweenShots = 1f;
-    public GameObject projectilePrefab;
+    public float visionConeAngle = 60f;
+    public float visionDistance = 15f;
+    public float attackDistance = 10f;
+    public float wanderRadius = 5f;
+    public float wanderInterval = 5f;
+    public float attackRate = 1.5f;
+    public float projectileForce = 500f;
+    public GameObject enemyProjectilePrefab;
     public Transform projectileSpawnPoint;
-    public float projectileSpeed = 10f;
 
     private NavMeshAgent agent;
-    private float wanderTimer;
-    private bool playerInSight;
-    private bool isAttacking;
-    private float timeSinceLastShot;
+    private Animator animator;
+    private float nextAttackTime;
+    private float nextWanderTime;
+    private Vector3 wanderDestination;
+    private Vector3 lastKnownPlayerPosition;
+    private bool isPlayerInSight = false;
+    private bool isDead = false;
 
-    void Start()
+    private void Start()
     {
         agent = GetComponent<NavMeshAgent>();
-        wanderTimer = wanderTime;
-        timeSinceLastShot = timeBetweenShots;
+        animator = GetComponent<Animator>();  // Reference to the Animator component
+        nextWanderTime = Time.time;
+        SetWanderDestination();
     }
 
-    void Update()
+    private void Update()
     {
-        playerInSight = IsPlayerInSight();
+        if (isDead) return;
 
-        if (playerInSight)
+        float speed = agent.velocity.magnitude;
+        animator.SetFloat("Speed", speed);
+        animator.SetBool("IsChasing", isPlayerInSight);
+
+        if (IsPlayerInVisionCone())
         {
-            Debug.Log("Player in sight. Chasing...");
-            ChasePlayer();
+            isPlayerInSight = true;
+            lastKnownPlayerPosition = player.position;
+
+            if (Vector3.Distance(transform.position, player.position) <= attackDistance)
+            {
+                ShootProjectile();
+            }
+            else
+            {
+                ChasePlayer();
+            }
         }
         else
         {
-            Debug.Log("Player not in sight. Wandering...");
-            Wander();
+            if (isPlayerInSight)
+            {
+                ChasePlayerToLastKnownPosition();
+            }
+            else if (Time.time >= nextWanderTime)
+            {
+                Wander();
+            }
         }
-
-        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
-        if (distanceToPlayer <= attackRange)
-        {
-            Debug.Log("Player in attack range. Attacking...");
-            AttackPlayer();
-        }
-
-        timeSinceLastShot += Time.deltaTime;
     }
 
-    private bool IsPlayerInSight()
+    private bool IsPlayerInVisionCone()
     {
         Vector3 directionToPlayer = player.position - transform.position;
-        float angle = Vector3.Angle(transform.forward, directionToPlayer);
+        float angleToPlayer = Vector3.Angle(transform.forward, directionToPlayer);
 
-        if (directionToPlayer.magnitude <= visionRange && angle <= visionAngle)
+        if (angleToPlayer < visionConeAngle / 2f && directionToPlayer.magnitude <= visionDistance)
         {
             RaycastHit hit;
-            if (Physics.Raycast(transform.position + Vector3.up, directionToPlayer.normalized, out hit, visionRange))
+            if (Physics.Raycast(transform.position, directionToPlayer, out hit, visionDistance))
             {
                 if (hit.transform == player)
                 {
@@ -68,7 +82,6 @@ public class EnemyAi : MonoBehaviour
                 }
             }
         }
-
         return false;
     }
 
@@ -77,56 +90,62 @@ public class EnemyAi : MonoBehaviour
         agent.SetDestination(player.position);
     }
 
-    private void Wander()
+    private void ChasePlayerToLastKnownPosition()
     {
-        if (agent.remainingDistance < 1f || !agent.hasPath)
+        if (Vector3.Distance(transform.position, lastKnownPlayerPosition) < 1f)
         {
-            wanderTimer -= Time.deltaTime;
-            if (wanderTimer <= 0f)
-            {
-                SetNewWanderPoint();
-                wanderTimer = wanderTime;
-            }
-        }
-    }
-
-    private void SetNewWanderPoint()
-    {
-        Vector3 randomDirection = Random.insideUnitSphere * wanderRange;
-        randomDirection += transform.position;
-        NavMeshHit hit;
-        if (NavMesh.SamplePosition(randomDirection, out hit, wanderRange, NavMesh.AllAreas))
-        {
-            agent.SetDestination(hit.position);
-        }
-    }
-
-    private void AttackPlayer()
-    {
-        if (timeSinceLastShot >= timeBetweenShots)
-        {
-            Shoot();
-            timeSinceLastShot = 0f;
-        }
-    }
-
-    private void Shoot()
-    {
-        GameObject projectile = Instantiate(projectilePrefab, projectileSpawnPoint.position, projectileSpawnPoint.rotation);
-        Rigidbody rb = projectile.GetComponent<Rigidbody>();
-        if (rb != null)
-        {
-            rb.velocity = (player.position - projectileSpawnPoint.position).normalized * projectileSpeed;
+            isPlayerInSight = false;
+            nextWanderTime = Time.time + wanderInterval;
         }
         else
         {
-            Debug.LogError("Projectile prefab does not have a Rigidbody component!");
+            agent.SetDestination(lastKnownPlayerPosition);
         }
     }
 
-    public void TakeDamage(int damageAmount)
+    private void ShootProjectile()
     {
-        // Implement damage logic here (e.g., reduce health)
-        Debug.Log("Enemy took damage: " + damageAmount);
+        if (Time.time >= nextAttackTime)
+        {
+            if (projectileSpawnPoint == null) return;
+
+            GameObject projectile = Instantiate(enemyProjectilePrefab, projectileSpawnPoint.position, Quaternion.identity);
+            Vector3 directionToPlayer = (player.position - projectileSpawnPoint.position).normalized;
+            Rigidbody rb = projectile.GetComponent<Rigidbody>();
+            rb.AddForce(directionToPlayer * projectileForce);
+            projectile.transform.LookAt(player.position);
+
+            nextAttackTime = Time.time + attackRate;
+        }
+    }
+
+    private void Wander()
+    {
+        SetWanderDestination();
+        agent.SetDestination(wanderDestination);
+        nextWanderTime = Time.time + wanderInterval;
+    }
+
+    private void SetWanderDestination()
+    {
+        Vector3 randomDirection = Random.insideUnitSphere * wanderRadius;
+        randomDirection += transform.position;
+        NavMeshHit navHit;
+        NavMesh.SamplePosition(randomDirection, out navHit, wanderRadius, -1);
+        wanderDestination = navHit.position;
+    }
+
+    public void TakeDamage(int damage)
+    {
+        if (isDead) return;
+
+        // Logic to reduce health
+        // if health <= 0, then:
+        isDead = true;
+        agent.isStopped = true;  // Stop moving
+        animator.SetTrigger("Die");  // Trigger death animation
+
+        // Optionally destroy or disable the enemy after the death animation
+        Destroy(gameObject, 5f);  // Destroy after 5 seconds (adjust timing based on animation length)
     }
 }

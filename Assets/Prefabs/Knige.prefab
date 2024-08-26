@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 6951312868157119462}
   - component: {fileID: -4616356911413727813}
   - component: {fileID: 585191935885991775}
+  - component: {fileID: 5363333139300235738}
   m_Layer: 0
   m_Name: Knige
   m_TagString: Untagged
@@ -28,13 +29,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7511809474904126722}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.5, y: -0.5, z: 0.5, w: 0.5}
+  m_LocalRotation: {x: 0, y: -0.7071068, z: 0.7071068, w: 0}
   m_LocalPosition: {x: -7.84, y: 1.8, z: 14.2}
   m_LocalScale: {x: 0.06, y: 0.02, z: 0.08}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 90, y: 90, z: 180}
+  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 180}
 --- !u!33 &4825303189133175830
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -134,3 +135,18 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 17.22887, y: 5.242599, z: 2.4380536}
   m_Center: {x: 0.5296149, y: 0, z: -0.181485}
+--- !u!114 &5363333139300235738
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7511809474904126722}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7551356ca65780542ae842df1c8376f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speed: 20
+  damage: 10
+  lifetime: 5

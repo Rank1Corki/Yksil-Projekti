@@ -9,6 +9,8 @@ public class PlayerController : MonoBehaviour
     public float stepHeight = 0.4f;
     public float stepRayForward = 0.3f;
     public float stepRayHeight = 0.25f;
+    public int maxHealth = 100;  // Maximum health of the player
+    private int currentHealth;   // Current health of the player
 
     public Transform cameraTransform;
 
@@ -25,6 +27,8 @@ public class PlayerController : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        currentHealth = maxHealth;  // Initialize player's health
     }
 
     void Update()
@@ -105,5 +109,23 @@ public class PlayerController : MonoBehaviour
         {
             rb.velocity = new Vector3(0, rb.velocity.y, 0);
         }
+    }
+
+    // TakeDamage method to handle receiving damage
+    public void TakeDamage(int damage)
+    {
+        currentHealth -= damage;
+        Debug.Log("Player took " + damage + " damage. Current health: " + currentHealth);
+
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        Debug.Log("Player died!");
+        // Add logic for when the player dies, like reloading the level or showing a game over screen
     }
 }
